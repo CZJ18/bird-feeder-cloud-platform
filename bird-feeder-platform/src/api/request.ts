@@ -1,7 +1,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from 'axios'
 import { ElMessage } from 'element-plus'
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
+const BASE_URL = import.meta.env.PROD
+  ? '/api'
+  : import.meta.env.VITE_API_BASE_URL || '/api'
 
 const axiosInstance: AxiosInstance = axios.create({
   baseURL: BASE_URL,
