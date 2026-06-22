@@ -27,7 +27,13 @@ async def latest_status(device: Device) -> DeviceStatus | None:
 def is_online(status: DeviceStatus | None) -> bool:
     if status is None:
         return False
-    return status.timestamp >= recent_threshold(settings.device_online_seconds)
+    threshold = recent_threshold(settings.device_online_seconds)
+    timestamp = status.timestamp
+    if timestamp.tzinfo is None and threshold.tzinfo is not None:
+        threshold = threshold.replace(tzinfo=None)
+    elif timestamp.tzinfo is not None and threshold.tzinfo is None:
+        timestamp = timestamp.replace(tzinfo=None)
+    return timestamp >= threshold
 
 
 async def device_last_seen(device: Device) -> datetime | None:

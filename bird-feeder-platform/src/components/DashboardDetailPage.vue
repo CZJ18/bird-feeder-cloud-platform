@@ -316,45 +316,6 @@ const loadCharts = async () => {
 }
 
 const loadDevices = async () => {
-  const res = await request<ApiResponse<MqttStatus>>({ url: '/mqtt/status' })
-  const mqtt = res.data
-  deviceStatusRows.value = [
-    {
-      deviceId: 'MQTT',
-      name: 'Broker',
-      location: '43.139.90.125:8883',
-      status: (mqtt.broker.connected ? '鍦ㄧ嚎' : '绂荤嚎') as DeviceStatusRow['status'],
-      lastSeen: formatTime(mqtt.business.latest_business_at),
-      temperature: '--',
-      battery: '--',
-      foodLevel: '--',
-      todayEvents: mqtt.business.event_count
-    },
-    {
-      deviceId: 'EVENT',
-      name: 'birdcam/event',
-      location: 'event_leave',
-      status: (mqtt.business.latest_event_at ? '鍦ㄧ嚎' : '绂荤嚎') as DeviceStatusRow['status'],
-      lastSeen: formatTime(mqtt.business.latest_event_at),
-      temperature: '--',
-      battery: '--',
-      foodLevel: '--',
-      todayEvents: mqtt.business.event_count
-    },
-    {
-      deviceId: 'STATUS',
-      name: 'birdcam/status',
-      location: 'device_status',
-      status: (mqtt.business.latest_status_at ? '鍦ㄧ嚎' : '绂荤嚎') as DeviceStatusRow['status'],
-      lastSeen: formatTime(mqtt.business.latest_status_at),
-      temperature: '--',
-      battery: '--',
-      foodLevel: '--',
-      todayEvents: mqtt.business.status_count
-    }
-  ]
-  return
-
   const [statusRes, listRes] = await Promise.all([
     request<ApiResponse<{ devices: DeviceStatusApiRow[] }>>({ url: '/devices/status' }),
     request<ApiResponse<{ devices: DeviceListApiRow[] }>>({ url: '/device/list' })
