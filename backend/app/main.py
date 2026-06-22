@@ -1,33 +1,67 @@
+from __future__ import annotations
+
+import asyncio
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from app.routers import device, bird, statistics, logs
-from app.database import init_db
-from app.config import UPLOAD_DIR
-import os
+from loguru import logger
 
-app = FastAPI(title="智能喂鸟器云端管理平台", version="1.0.0")
+from app.api.router import api_router
+from app.api.upload import router as upload_router
+from app.config import settings
+from app.database import close_database, init_database
+from app.utils.logger import setup_logging
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    setup_logging()
+    await init_database()
+    settings.upload_root.parent.mkdir(parents=True, exist_ok=True)
+
+    mqtt_task: asyncio.Task | None = None
+    if settings.enable_mqtt:
+        from app.mqtt_client.consumer import mqtt_consumer
+
+        mqtt_task = asyncio.create_task(mqtt_consumer())
+        logger.info("MQTT consumer started inside FastAPI process")
+
+    try:
+        yield
+    finally:
+        if mqtt_task:
+            mqtt_task.cancel()
+            try:
+                await mqtt_task
+            except asyncio.CancelledError:
+                logger.info("MQTT consumer stopped")
+        await close_database()
+
+
+app = FastAPI(title="鸟类智能监测系统后端", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.cors_origins or [],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
+static_root = settings.upload_root.parent
+static_root.mkdir(parents=True, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(static_root)), name="uploads")
+app.include_router(api_router)
+app.include_router(upload_router)
 
-app.include_router(device.router, prefix="/api", tags=["device"])
-app.include_router(bird.router, prefix="/api", tags=["bird"])
-app.include_router(statistics.router, prefix="/api", tags=["statistics"])
-app.include_router(logs.router, prefix="/api", tags=["logs"])
-
-@app.on_event("startup")
-async def startup_event():
-    init_db()
 
 @app.get("/")
-async def root():
-    return {"ok": True, "message": "智能喂鸟器云端管理平台 API", "version": "1.0.0"}
+async def root() -> dict[str, object]:
+    return {"code": 200, "message": "success", "data": {"name": "鸟类智能监测系统后端", "version": "1.0.0"}}
+
+
+@app.get("/health")
+async def health() -> dict[str, object]:
+    return {"code": 200, "message": "ok"}

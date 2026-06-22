@@ -1,0 +1,16 @@
+.git
+.vercel
+node_modules
+bird-feeder-platform/node_modules
+bird-feeder-platform/dist
+bird-feeder-platform/*.log
+bird-feeder-platform/*.png
+backend/.env
+backend/*.log
+backend/*.db
+backend/logs
+backend/uploads
+backend/certs
+backend/.pytest_cache
+**/__pycache__
+**/*.pyc

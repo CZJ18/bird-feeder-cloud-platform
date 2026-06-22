@@ -1,0 +1,15 @@
+[Unit]
+Description=BirdCam MQTT worker
+After=network.target mysql.service birdcam-api.service
+
+[Service]
+Type=simple
+User=birdcam
+WorkingDirectory=/opt/birdcam/backend
+EnvironmentFile=/opt/birdcam/backend/.env
+ExecStart=/opt/birdcam/backend/.venv/bin/python -m app.worker
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

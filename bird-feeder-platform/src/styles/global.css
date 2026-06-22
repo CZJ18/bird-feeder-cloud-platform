@@ -1,0 +1,108 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+
+:root {
+  --screen-bg: #030915;
+  --panel-bg: rgba(7, 20, 38, 0.72);
+  --panel-bg-strong: rgba(6, 16, 31, 0.88);
+  --panel-line: rgba(70, 230, 255, 0.32);
+  --panel-line-soft: rgba(70, 230, 255, 0.16);
+  --text-main: #ecfbff;
+  --text-muted: #87a4ba;
+  --cyan: #35e8ff;
+  --blue: #2f8dff;
+  --green: #57ffad;
+  --amber: #ffd76a;
+  --orange: #ff9f43;
+  --danger: #ff5f86;
+  color: var(--text-main);
+  font-family: 'Noto Sans SC', 'Microsoft YaHei', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#app {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  overflow: hidden;
+  background: var(--screen-bg);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}
+
+.digital {
+  font-family: 'Orbitron', 'Consolas', monospace;
+  letter-spacing: 0;
+}
+
+.screen-panel {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--panel-line);
+  border-radius: 8px;
+  background:
+    linear-gradient(135deg, rgba(65, 222, 255, 0.08), transparent 32%),
+    linear-gradient(180deg, var(--panel-bg), rgba(5, 13, 28, 0.78));
+  box-shadow:
+    0 0 28px rgba(53, 232, 255, 0.12),
+    inset 0 0 24px rgba(53, 232, 255, 0.06);
+}
+
+.screen-panel::before,
+.screen-panel::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.screen-panel::before {
+  top: 8px;
+  left: 8px;
+  border-top: 2px solid rgba(87, 255, 173, 0.75);
+  border-left: 2px solid rgba(87, 255, 173, 0.75);
+}
+
+.screen-panel::after {
+  right: 8px;
+  bottom: 8px;
+  border-right: 2px solid rgba(53, 232, 255, 0.72);
+  border-bottom: 2px solid rgba(53, 232, 255, 0.72);
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 12px;
+  color: #e9fbff;
+  font-size: clamp(13px, 0.9vw, 16px);
+  font-weight: 800;
+}
+
+.panel-title::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--cyan), var(--green));
+  box-shadow: 0 0 14px rgba(53, 232, 255, 0.85);
+}
+
+.chart-host {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}

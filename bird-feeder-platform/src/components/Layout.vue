@@ -17,27 +17,27 @@
           <el-icon><DataAnalysis /></el-icon>
           <span>首页仪表盘</span>
         </el-menu-item>
-        <el-menu-item index="/devices">
+        <el-menu-item index="/manage/devices">
           <el-icon><Monitor /></el-icon>
           <span>设备管理</span>
         </el-menu-item>
-        <el-menu-item index="/events">
+        <el-menu-item index="/manage/events">
           <el-icon><Camera /></el-icon>
           <span>鸟类识别记录</span>
         </el-menu-item>
-        <el-menu-item index="/history">
+        <el-menu-item index="/manage/history">
           <el-icon><Document /></el-icon>
           <span>历史识别结果</span>
         </el-menu-item>
-        <el-menu-item index="/statistics">
+        <el-menu-item index="/manage/statistics">
           <el-icon><PieChart /></el-icon>
           <span>数据统计</span>
         </el-menu-item>
-        <el-menu-item index="/config">
+        <el-menu-item index="/manage/config">
           <el-icon><Setting /></el-icon>
           <span>远程参数设置</span>
         </el-menu-item>
-        <el-menu-item index="/logs">
+        <el-menu-item index="/manage/logs">
           <el-icon><Tickets /></el-icon>
           <span>系统日志</span>
         </el-menu-item>
@@ -96,12 +96,16 @@ const currentRoute = computed(() => route.path)
 <style scoped lang="scss">
 .layout-container {
   height: 100vh;
-  background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+  background:
+    radial-gradient(circle at 72% 8%, rgba(93, 224, 230, 0.1), transparent 26%),
+    radial-gradient(circle at 18% 88%, rgba(124, 247, 167, 0.08), transparent 24%),
+    linear-gradient(135deg, #060a13 0%, #0b1120 48%, #101827 100%);
 }
 
 .sidebar {
-  background: #1a1a2e;
-  border-right: 1px solid rgba(0, 212, 255, 0.1);
+  background: rgba(9, 14, 26, 0.82);
+  backdrop-filter: blur(18px);
+  border-right: 1px solid rgba(133, 232, 255, 0.12);
   overflow-x: hidden;
   
   &::-webkit-scrollbar {
@@ -151,9 +155,9 @@ const currentRoute = computed(() => route.path)
 }
 
 .header {
-  background: rgba(26, 26, 46, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 212, 255, 0.1);
+  background: rgba(9, 14, 26, 0.72);
+  backdrop-filter: blur(18px);
+  border-bottom: 1px solid rgba(133, 232, 255, 0.1);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -206,6 +210,7 @@ const currentRoute = computed(() => route.path)
 .main-content {
   padding: 24px;
   overflow-y: auto;
+  background: transparent;
   
   &::-webkit-scrollbar {
     width: 8px;

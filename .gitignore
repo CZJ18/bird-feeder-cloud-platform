@@ -14,5 +14,11 @@ bird-feeder-platform/node_modules/
 bird-feeder-platform/dist/
 backend/app.db
 backend/uploads/
+*.log
+*.zip
+*.docx
+bird-feeder-platform/*.png
+backend/logs/
+backend/certs/
 
 .vercel

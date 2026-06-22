@@ -2,6 +2,9 @@
   "name": "bird-feeder-cloud-platform-deploy",
   "private": true,
   "version": "1.0.0",
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "build": "npm --prefix bird-feeder-platform ci && npm --prefix bird-feeder-platform run build"
   }

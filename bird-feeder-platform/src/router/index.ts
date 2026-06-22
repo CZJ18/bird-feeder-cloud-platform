@@ -6,14 +6,42 @@ const router = createRouter({
   routes: [
     {
       path: '/',
+      redirect: '/dashboard'
+    },
+    {
+      path: '/dashboard',
+      name: 'Dashboard',
+      component: () => import('@/views/Dashboard.vue')
+    },
+    {
+      path: '/devices',
+      redirect: '/manage/devices'
+    },
+    {
+      path: '/events',
+      redirect: '/manage/events'
+    },
+    {
+      path: '/history',
+      redirect: '/manage/history'
+    },
+    {
+      path: '/statistics',
+      redirect: '/manage/statistics'
+    },
+    {
+      path: '/config',
+      redirect: to => ({ path: '/manage/config', query: to.query })
+    },
+    {
+      path: '/logs',
+      redirect: '/manage/logs'
+    },
+    {
+      path: '/manage',
       component: Layout,
-      redirect: '/dashboard',
+      redirect: '/manage/devices',
       children: [
-        {
-          path: 'dashboard',
-          name: 'Dashboard',
-          component: () => import('@/views/Dashboard.vue')
-        },
         {
           path: 'devices',
           name: 'Devices',

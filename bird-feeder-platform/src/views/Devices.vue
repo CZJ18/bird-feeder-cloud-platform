@@ -176,7 +176,7 @@ const restart = async (device: Device) => {
 }
 
 const openConfig = (device: Device) => {
-  router.push(`/config?device=${device.device_id}`)
+  router.push(`/manage/config?device=${device.device_id}`)
 }
 
 import { useRouter } from 'vue-router'
