@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass
+from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin
 from urllib.request import Request, urlopen
 
@@ -41,7 +42,7 @@ def _read_url(url: str, accept: str = "application/json") -> bytes:
     headers = _edge_headers()
     headers["Accept"] = accept
     request = Request(url, headers=headers)
-    with urlopen(request, timeout=30) as response:
+    with urlopen(request, timeout=10) as response:
         return response.read()
 
 
@@ -117,11 +118,18 @@ async def sync_edge_recordings(limit: int | None = None) -> dict[str, int]:
 def _open_edge_video(path: str):
     url = urljoin(f"{_edge_base_url()}/api/recordings/", quote(path, safe="/"))
     request = Request(url, headers=_edge_headers())
-    return urlopen(request, timeout=60)
+    return urlopen(request, timeout=10)
 
 
 async def stream_edge_recording(path: str) -> StreamingResponse:
-    response = await asyncio.to_thread(_open_edge_video, path)
+    try:
+        response = await asyncio.to_thread(_open_edge_video, path)
+    except HTTPError as exc:
+        raise HTTPException(status_code=exc.code, detail="Edge recording is unavailable") from exc
+    except URLError as exc:
+        raise HTTPException(status_code=502, detail=f"Edge recording source is unavailable: {exc.reason}") from exc
+    except TimeoutError as exc:
+        raise HTTPException(status_code=502, detail="Edge recording source timed out") from exc
 
     def iterator():
         with response:
