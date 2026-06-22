@@ -31,17 +31,17 @@ def _edge_base_url() -> str:
     return settings.edge_recordings_base_url.rstrip("/")
 
 
-def _edge_headers() -> dict[str, str]:
-    headers = {"Accept": "application/json"}
+def _edge_headers(accept: str = "application/json", range_header: str | None = None) -> dict[str, str]:
+    headers = {"Accept": accept}
     if settings.edge_recordings_api_token:
         headers["X-API-Token"] = settings.edge_recordings_api_token
+    if range_header:
+        headers["Range"] = range_header
     return headers
 
 
 def _read_url(url: str, accept: str = "application/json") -> bytes:
-    headers = _edge_headers()
-    headers["Accept"] = accept
-    request = Request(url, headers=headers)
+    request = Request(url, headers=_edge_headers(accept=accept))
     with urlopen(request, timeout=10) as response:
         return response.read()
 
@@ -115,17 +115,17 @@ async def sync_edge_recordings(limit: int | None = None) -> dict[str, int]:
     return {"total": len(recordings), "created": created, "updated": updated}
 
 
-def _open_edge_video(path: str):
+def _open_edge_video(path: str, range_header: str | None = None):
     url = urljoin(f"{_edge_base_url()}/api/recordings/", quote(path, safe="/"))
-    request = Request(url, headers=_edge_headers())
+    request = Request(url, headers=_edge_headers(accept="video/mp4,*/*", range_header=range_header))
     return urlopen(request, timeout=10)
 
 
-async def stream_edge_recording(path: str) -> StreamingResponse:
+async def stream_edge_recording(path: str, range_header: str | None = None) -> StreamingResponse:
     try:
-        response = await asyncio.to_thread(_open_edge_video, path)
+        response = await asyncio.to_thread(_open_edge_video, path, range_header)
     except HTTPError as exc:
-        raise HTTPException(status_code=exc.code, detail="Edge recording is unavailable") from exc
+        raise HTTPException(status_code=exc.code, detail=f"Edge recording is unavailable: {exc.reason}") from exc
     except URLError as exc:
         raise HTTPException(status_code=502, detail=f"Edge recording source is unavailable: {exc.reason}") from exc
     except TimeoutError as exc:
@@ -139,4 +139,15 @@ async def stream_edge_recording(path: str) -> StreamingResponse:
                     break
                 yield chunk
 
-    return StreamingResponse(iterator(), media_type=response.headers.get("Content-Type", "video/mp4"))
+    headers = {"Accept-Ranges": "bytes"}
+    for name in ("Content-Length", "Content-Range"):
+        value = response.headers.get(name)
+        if value:
+            headers[name] = value
+
+    return StreamingResponse(
+        iterator(),
+        status_code=getattr(response, "status", 200),
+        media_type=response.headers.get("Content-Type", "video/mp4"),
+        headers=headers,
+    )
