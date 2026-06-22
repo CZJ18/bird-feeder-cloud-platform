@@ -13,8 +13,20 @@ export interface BirdEvent {
   id: number
   device_id: string
   bird_name: string
+  class_id?: number | null
+  track_id?: number | null
+  event_type?: string | null
   confidence: number
   image_url: string
+  video_path?: string
+  box?: {
+    x1: number
+    y1: number
+    x2: number
+    y2: number
+  }
+  temperature?: number | null
+  humidity?: number | null
   battery: number
   food_level: number
   created_at: string

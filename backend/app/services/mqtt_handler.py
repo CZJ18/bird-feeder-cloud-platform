@@ -11,6 +11,18 @@ from app.services.device_service import get_or_create_device
 from app.utils.time_utils import from_unix_seconds
 
 
+def _event_box(payload: dict[str, Any]) -> tuple[Decimal, Decimal, Decimal, Decimal]:
+    box = payload.get("box")
+    if isinstance(box, list | tuple) and len(box) >= 4:
+        return tuple(Decimal(str(value)) for value in box[:4])  # type: ignore[return-value]
+    return (
+        Decimal(str(payload.get("x1", 0))),
+        Decimal(str(payload.get("y1", 0))),
+        Decimal(str(payload.get("x2", 0))),
+        Decimal(str(payload.get("y2", 0))),
+    )
+
+
 async def handle_event_message(payload: dict[str, Any]) -> EventLeave | None:
     """Persist leave events and ignore enter events."""
     event_type = payload.get("event_type")
@@ -30,15 +42,16 @@ async def handle_event_message(payload: dict[str, Any]) -> EventLeave | None:
             raise ValueError(f"unknown device_id: {device_id}")
 
     species = await SpeciesDict.get_or_none(class_id=payload.get("class_id"))
+    box_x1, box_y1, box_x2, box_y2 = _event_box(payload)
     event = await EventLeave.create(
         track_id=int(payload.get("track_id", 0)),
         device=device,
         timestamp=from_unix_seconds(payload.get("timestamp")),
         confidence=Decimal(str(payload.get("confidence", 0))),
-        box_x1=Decimal(str(payload.get("x1", 0))),
-        box_y1=Decimal(str(payload.get("y1", 0))),
-        box_x2=Decimal(str(payload.get("x2", 0))),
-        box_y2=Decimal(str(payload.get("y2", 0))),
+        box_x1=box_x1,
+        box_y1=box_y1,
+        box_x2=box_x2,
+        box_y2=box_y2,
         species=species,
         species_name=species.species_cn if species else None,
         video_path=payload.get("video_path"),

@@ -13,12 +13,25 @@ router = APIRouter()
 
 async def _event_payload(event: EventLeave) -> dict[str, object]:
     latest = await DeviceStatus.filter(device=event.device).order_by("-timestamp").first()
+    raw_payload = event.raw_payload or {}
     return {
         "id": event.id,
         "device_id": event.device.device_id,
         "bird_name": event.species_name or "未知",
+        "class_id": raw_payload.get("class_id"),
+        "track_id": event.track_id,
+        "event_type": raw_payload.get("event_type"),
         "confidence": float(event.confidence),
         "image_url": "",
+        "video_path": event.video_path or raw_payload.get("video_path") or "",
+        "box": {
+            "x1": float(event.box_x1),
+            "y1": float(event.box_y1),
+            "x2": float(event.box_x2),
+            "y2": float(event.box_y2),
+        },
+        "temperature": raw_payload.get("temperature"),
+        "humidity": raw_payload.get("humidity"),
         "battery": latest.battery if latest and latest.battery is not None else 0,
         "food_level": latest.food_level if latest and latest.food_level is not None else 0,
         "location": event.device.location_desc or "",

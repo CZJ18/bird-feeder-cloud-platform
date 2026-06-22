@@ -101,8 +101,20 @@
       v-loading="loading"
     >
       <el-table-column prop="id" label="ID" width="80" />
+      <el-table-column prop="track_id" label="Track" width="90" />
+      <el-table-column prop="class_id" label="Class" width="80" />
       <el-table-column prop="device_id" label="设备ID" width="120" />
       <el-table-column prop="bird_name" label="鸟类名称" width="120" />
+      <el-table-column label="识别框" min-width="180">
+        <template #default="{ row }">
+          <span>{{ formatBox(row) }}</span>
+        </template>
+      </el-table-column>
+      <el-table-column label="温湿度" width="130">
+        <template #default="{ row }">
+          <span>{{ formatEnv(row) }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="置信度" width="120">
         <template #default="{ row }">
           <el-tag type="success">{{ (row.confidence * 100).toFixed(0) }}%</el-tag>
@@ -171,6 +183,10 @@
             <el-descriptions :column="1" border>
               <el-descriptions-item label="记录ID">{{ selectedRecord.id }}</el-descriptions-item>
               <el-descriptions-item label="设备ID">{{ selectedRecord.device_id }}</el-descriptions-item>
+              <el-descriptions-item label="Track">{{ selectedRecord.track_id || '--' }}</el-descriptions-item>
+              <el-descriptions-item label="Class">{{ selectedRecord.class_id ?? '--' }}</el-descriptions-item>
+              <el-descriptions-item label="识别框">{{ formatBox(selectedRecord) }}</el-descriptions-item>
+              <el-descriptions-item label="温湿度">{{ formatEnv(selectedRecord) }}</el-descriptions-item>
               <el-descriptions-item label="鸟类名称">{{ selectedRecord.bird_name }}</el-descriptions-item>
               <el-descriptions-item label="识别置信度">
                 <el-tag type="success">{{ (selectedRecord.confidence * 100).toFixed(1) }}%</el-tag>
@@ -329,6 +345,19 @@ const getFoodColor = (value: number) => {
   if (value > 60) return '#00d4ff'
   if (value > 30) return '#ffb800'
   return '#ff4757'
+}
+
+const formatBox = (row: HistoryRecord) => {
+  if (!row.box) return '--'
+  const { x1, y1, x2, y2 } = row.box
+  return `${x1}, ${y1}, ${x2}, ${y2}`
+}
+
+const formatEnv = (row: HistoryRecord) => {
+  const parts: string[] = []
+  if (row.temperature !== undefined && row.temperature !== null) parts.push(`${row.temperature}C`)
+  if (row.humidity !== undefined && row.humidity !== null) parts.push(`${row.humidity}%`)
+  return parts.length ? parts.join(' / ') : '--'
 }
 
 onMounted(() => {
