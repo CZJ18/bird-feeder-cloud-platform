@@ -72,7 +72,8 @@
         <h2 class="panel-title">精彩瞬间</h2>
         <div class="moment-list">
           <button v-for="item in videoCards" :key="item.title" type="button" @click="emit('openMoment', item)">
-            <img :src="item.image" :alt="item.title" />
+            <video v-if="item.videoUrl" :src="item.videoUrl" muted preload="metadata" playsinline />
+            <img v-else :src="item.image" :alt="item.title" />
             <span>{{ item.title }}</span>
             <small>{{ item.camera }} / {{ item.time }}</small>
           </button>
@@ -376,6 +377,7 @@ const loadMoments = async () => {
     species: '--',
     time: '--',
     image: resolveAssetUrl(item.coverImage || ''),
+    videoUrl: resolveAssetUrl(item.videoUrl || ''),
     description: item.videoUrl ? `视频地址：${item.videoUrl}` : '管理员添加的精彩瞬间'
   }))
 }
@@ -609,7 +611,8 @@ onUnmounted(() => {
   padding: 6px;
 }
 
-.moment-list img {
+.moment-list img,
+.moment-list video {
   grid-row: span 2;
   width: 72px;
   height: 42px;

@@ -44,7 +44,8 @@
       <div v-if="modal" class="detail-layer" @click.self="closeModal">
         <section class="detail-modal" role="dialog" aria-modal="true" :aria-label="modal.title">
           <button type="button" class="modal-close" aria-label="关闭详情" @click="closeModal">×</button>
-          <img v-if="modal.image" class="modal-image" :src="modal.image" :alt="modal.title" />
+          <video v-if="modal.videoUrl" class="modal-video" :src="modal.videoUrl" controls autoplay playsinline />
+          <img v-else-if="modal.image" class="modal-image" :src="modal.image" :alt="modal.title" />
           <div class="modal-content">
             <span class="modal-kicker">{{ modal.kicker }}</span>
             <h2>{{ modal.title }}</h2>
@@ -85,6 +86,7 @@ interface DetailModal {
   title: string
   description: string
   image?: string
+  videoUrl?: string
   meta: Array<{ label: string; value: string }>
 }
 
@@ -234,7 +236,8 @@ const openMedia = (item: VideoCard) => {
     kicker: '精彩瞬间',
     title: item.title,
     description: item.description,
-    image: item.image,
+    image: item.videoUrl ? undefined : item.image,
+    videoUrl: item.videoUrl,
     meta: [
       { label: '采集设备', value: item.camera },
       { label: '识别物种', value: item.species },
@@ -444,6 +447,13 @@ onUnmounted(() => window.removeEventListener('keydown', handleKeydown))
   width: 100%;
   max-height: 46vh;
   object-fit: cover;
+  border-bottom: 1px solid rgba(53, 232, 255, 0.22);
+}
+
+.modal-video {
+  width: 100%;
+  max-height: 62vh;
+  background: #000;
   border-bottom: 1px solid rgba(53, 232, 255, 0.22);
 }
 

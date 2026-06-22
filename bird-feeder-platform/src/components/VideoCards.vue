@@ -2,7 +2,8 @@
   <div class="video-grid">
     <article v-for="item in videos" :key="item.title" class="video-card" :class="`tone-${item.tone}`">
       <button type="button" class="video-cover" @click="emit('open', item)">
-        <img :src="item.image" :alt="item.title" loading="lazy" />
+        <video v-if="item.videoUrl" :src="item.videoUrl" muted preload="metadata" playsinline />
+        <img v-else :src="item.image" :alt="item.title" loading="lazy" />
         <div class="scan-line"></div>
         <span>{{ item.camera }}</span>
         <strong>{{ item.species }}</strong>
@@ -69,6 +70,7 @@ const loadMoments = async () => {
     species: '--',
     time: '--',
     image: resolveAssetUrl(item.coverImage || ''),
+    videoUrl: resolveAssetUrl(item.videoUrl || ''),
     description: item.videoUrl ? `视频地址：${item.videoUrl}` : '管理员添加的真实精彩瞬间'
   }))
 }
@@ -110,7 +112,8 @@ onMounted(loadMoments)
   padding: 0;
 }
 
-.video-cover img {
+.video-cover img,
+.video-cover video {
   width: 100%;
   height: 100%;
   display: block;

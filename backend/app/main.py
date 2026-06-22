@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 from loguru import logger
 
 from app.api.router import api_router
+from app.api.recordings import public_router as public_recordings_router
 from app.api.upload import router as upload_router
 from app.config import settings
 from app.database import close_database, init_database
@@ -53,6 +54,7 @@ app.add_middleware(
 static_root = settings.upload_root.parent
 static_root.mkdir(parents=True, exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(static_root)), name="uploads")
+app.include_router(public_recordings_router)
 app.include_router(api_router)
 app.include_router(upload_router)
 

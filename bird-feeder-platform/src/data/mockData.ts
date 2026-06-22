@@ -67,6 +67,7 @@ export interface VideoCard {
   species: string
   time: string
   image: string
+  videoUrl?: string
   description: string
 }
 
