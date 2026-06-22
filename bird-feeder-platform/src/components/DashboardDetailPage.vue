@@ -142,6 +142,28 @@ interface DashboardStats {
   }
 }
 
+interface MqttStatus {
+  broker: {
+    connected: boolean
+    clients: {
+      connected: number | null
+      active: number | null
+      total: number | null
+    }
+    messages: {
+      received: number | null
+      publish_received: number | null
+    }
+  }
+  business: {
+    event_count: number
+    status_count: number
+    latest_event_at: string | null
+    latest_status_at: string | null
+    latest_business_at: string | null
+  }
+}
+
 interface SpeciesPoint {
   name: string
   value: number
@@ -264,8 +286,22 @@ const formatTime = (value?: string | null) => {
 }
 
 const loadDashboardStats = async () => {
-  const res = await request<ApiResponse<DashboardStats>>({ url: '/dashboard/statistics' })
-  dashboardStats.value = res.data
+  const res = await request<ApiResponse<MqttStatus>>({ url: '/mqtt/status' })
+  const mqtt = res.data
+  dashboardStats.value = {
+    speciesStats: {
+      totalVisits: mqtt.business.event_count,
+      totalSpecies: mqtt.broker.clients.connected ?? 0,
+      onlineCount: mqtt.broker.clients.active ?? 0
+    },
+    kpiCard: {
+      todayNew: mqtt.business.status_count,
+      todayActive: mqtt.broker.clients.connected ?? 0,
+      pendingReview: 0,
+      avgConfidence: mqtt.broker.connected ? 100 : 0,
+      todaySpeciesCount: mqtt.broker.messages.publish_received ?? 0
+    }
+  }
 }
 
 const loadCharts = async () => {
@@ -280,6 +316,45 @@ const loadCharts = async () => {
 }
 
 const loadDevices = async () => {
+  const res = await request<ApiResponse<MqttStatus>>({ url: '/mqtt/status' })
+  const mqtt = res.data
+  deviceStatusRows.value = [
+    {
+      deviceId: 'MQTT',
+      name: 'Broker',
+      location: '43.139.90.125:8883',
+      status: (mqtt.broker.connected ? '鍦ㄧ嚎' : '绂荤嚎') as DeviceStatusRow['status'],
+      lastSeen: formatTime(mqtt.business.latest_business_at),
+      temperature: '--',
+      battery: '--',
+      foodLevel: '--',
+      todayEvents: mqtt.business.event_count
+    },
+    {
+      deviceId: 'EVENT',
+      name: 'birdcam/event',
+      location: 'event_leave',
+      status: (mqtt.business.latest_event_at ? '鍦ㄧ嚎' : '绂荤嚎') as DeviceStatusRow['status'],
+      lastSeen: formatTime(mqtt.business.latest_event_at),
+      temperature: '--',
+      battery: '--',
+      foodLevel: '--',
+      todayEvents: mqtt.business.event_count
+    },
+    {
+      deviceId: 'STATUS',
+      name: 'birdcam/status',
+      location: 'device_status',
+      status: (mqtt.business.latest_status_at ? '鍦ㄧ嚎' : '绂荤嚎') as DeviceStatusRow['status'],
+      lastSeen: formatTime(mqtt.business.latest_status_at),
+      temperature: '--',
+      battery: '--',
+      foodLevel: '--',
+      todayEvents: mqtt.business.status_count
+    }
+  ]
+  return
+
   const [statusRes, listRes] = await Promise.all([
     request<ApiResponse<{ devices: DeviceStatusApiRow[] }>>({ url: '/devices/status' }),
     request<ApiResponse<{ devices: DeviceListApiRow[] }>>({ url: '/device/list' })

@@ -16,18 +16,23 @@ async def dashboard_statistics() -> dict[str, object]:
     total_species = len({event.species_id for event in all_events if event.species_id is not None})
     pending_review = await LowConfidenceImage.filter(review_status="pending").count()
     today_events = await EventLeave.filter(timestamp__gte=today_start, timestamp__lte=today_end)
-    all_devices = await Device.all()
+    all_statuses = await DeviceStatus.all()
 
     online_count = 0
     today_active_ids: set[int] = set()
     today_species_ids: set[int] = set()
+    latest_status_by_device: dict[int, DeviceStatus] = {}
 
-    for device in all_devices:
-        status = await DeviceStatus.filter(device=device).order_by("-timestamp").first()
+    for status in all_statuses:
+        previous = latest_status_by_device.get(status.device_id)
+        if previous is None or status.timestamp > previous.timestamp:
+            latest_status_by_device[status.device_id] = status
+        if today_start <= status.timestamp <= today_end:
+            today_active_ids.add(status.device_id)
+
+    for status in latest_status_by_device.values():
         if is_online(status):
             online_count += 1
-        if status and today_start <= status.timestamp <= today_end:
-            today_active_ids.add(device.id)
 
     for event in today_events:
         today_active_ids.add(event.device_id)

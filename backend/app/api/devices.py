@@ -36,10 +36,50 @@ async def _device_payload(device: Device) -> dict[str, object]:
     }
 
 
+async def _latest_statuses_by_device() -> dict[int, DeviceStatus]:
+    latest_by_device: dict[int, DeviceStatus] = {}
+    for status_row in await DeviceStatus.all():
+        previous = latest_by_device.get(status_row.device_id)
+        if previous is None or status_row.timestamp > previous.timestamp:
+            latest_by_device[status_row.device_id] = status_row
+    return latest_by_device
+
+
+def _status_device_id(status_row: DeviceStatus) -> str:
+    return f"DEVICE-{status_row.device_id}"
+
+
+def _status_device_name(status_row: DeviceStatus) -> str:
+    raw = status_row.raw_payload or {}
+    payload_device_id = raw.get("device_id") if isinstance(raw, dict) else None
+    return str(payload_device_id or _status_device_id(status_row))
+
+
+def _status_payload(status_row: DeviceStatus) -> dict[str, object]:
+    name = _status_device_name(status_row)
+    return {
+        "device_id": name,
+        "name": name,
+        "cpu_temperature": float(status_row.cpu_temperature) if status_row.cpu_temperature is not None else None,
+        "memory_usage": {
+            "total_mb": float(status_row.mem_total_mb) if status_row.mem_total_mb is not None else None,
+            "available_mb": float(status_row.mem_available_mb) if status_row.mem_available_mb is not None else None,
+            "percent": float(status_row.mem_percent) if status_row.mem_percent is not None else None,
+        },
+        "disk_usage": {
+            "total_gb": float(status_row.disk_total_gb) if status_row.disk_total_gb is not None else None,
+            "free_gb": float(status_row.disk_free_gb) if status_row.disk_free_gb is not None else None,
+            "percent": float(status_row.disk_percent) if status_row.disk_percent is not None else None,
+        },
+        "online": is_online(status_row),
+        "last_seen": iso(status_row.timestamp),
+    }
+
+
 @router.get("/devices/status")
 async def get_devices_status() -> dict[str, object]:
-    devices = await Device.all()
-    return api_success({"devices": [await _device_payload(device) for device in devices]})
+    latest_by_device = await _latest_statuses_by_device()
+    return api_success({"devices": [_status_payload(status_row) for status_row in latest_by_device.values()]})
 
 
 @router.get("/devices/map")
@@ -51,17 +91,17 @@ async def get_devices_map(start_year: int | None = None, end_year: int | None = 
 @router.get("/device/list")
 async def get_device_list() -> dict[str, object]:
     rows = []
-    for device in await Device.all():
-        latest = await DeviceStatus.filter(device=device).order_by("-timestamp").first()
+    for latest in (await _latest_statuses_by_device()).values():
+        name = _status_device_name(latest)
         rows.append({
-            "device_id": device.device_id,
-            "name": device.name or device.device_id,
-            "location": device.location_desc or "",
+            "device_id": name,
+            "name": name,
+            "location": "",
             "status": "online" if is_online(latest) else "offline",
-            "battery": latest.battery if latest and latest.battery is not None else 0,
-            "food_level": latest.food_level if latest and latest.food_level is not None else 0,
-            "network": latest.network if latest and latest.network else "4G",
-            "last_online": latest.timestamp.strftime("%Y-%m-%d %H:%M:%S") if latest else "",
+            "battery": latest.battery if latest.battery is not None else 0,
+            "food_level": latest.food_level if latest.food_level is not None else 0,
+            "network": latest.network if latest.network else "4G",
+            "last_online": latest.timestamp.strftime("%Y-%m-%d %H:%M:%S"),
         })
     return ok_success({"devices": rows})
 
