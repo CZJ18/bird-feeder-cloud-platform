@@ -3,11 +3,13 @@ from __future__ import annotations
 import asyncio
 import json
 from dataclasses import dataclass
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.parse import quote, urljoin
 from urllib.request import Request, urlopen
 
 from fastapi import HTTPException
+from loguru import logger
 from starlette.responses import StreamingResponse
 
 from app.config import settings
@@ -79,6 +81,35 @@ def proxy_recording_url(path: str) -> str:
     return f"/api/recordings/{quote(path, safe='/')}"
 
 
+def local_recording_url(path: str) -> str:
+    return f"/uploads/recordings/{quote(path, safe='/')}"
+
+
+def _recordings_root() -> Path:
+    return settings.upload_root.parent / "recordings"
+
+
+def _download_edge_recording_sync(path: str) -> tuple[int, str]:
+    target = _recordings_root() / path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    if target.exists() and target.stat().st_size > 0:
+        return target.stat().st_size, local_recording_url(path)
+
+    response = _open_edge_video(path)
+    with response:
+        content_type = response.headers.get("Content-Type", "")
+        data = response.read()
+    if not data or "video" not in content_type:
+        raise HTTPException(status_code=502, detail=f"Unexpected edge video response for {path}")
+
+    target.write_bytes(data)
+    return len(data), local_recording_url(path)
+
+
+async def download_edge_recording(path: str) -> tuple[int, str]:
+    return await asyncio.to_thread(_download_edge_recording_sync, path)
+
+
 async def sync_edge_recordings(limit: int | None = None) -> dict[str, int]:
     recordings = await list_edge_recordings()
     if limit:
@@ -86,18 +117,24 @@ async def sync_edge_recordings(limit: int | None = None) -> dict[str, int]:
 
     created = 0
     updated = 0
+    downloaded = 0
+    skipped = 0
     for index, recording in enumerate(recordings):
-        video_url = proxy_recording_url(recording.path)
+        try:
+            _, video_url = await download_edge_recording(recording.path)
+            downloaded += 1
+        except (HTTPException, HTTPError, URLError, TimeoutError):
+            skipped += 1
+            continue
+
+        old_proxy_url = proxy_recording_url(recording.path)
         title = f"{recording.name} {recording.date}".strip()
-        description = [
-            f"path={recording.path}",
-            f"duration={recording.duration or 0}",
-            f"confidence={recording.confidence or 0}",
-            f"size_mb={recording.size_mb or 0}",
-        ]
         row = await Moment.filter(video_url=video_url).first()
+        if row is None:
+            row = await Moment.filter(video_url=old_proxy_url).first()
         if row:
             row.title = title or recording.name
+            row.video_url = video_url
             row.sort_order = index
             row.is_active = True
             await row.save()
@@ -112,7 +149,19 @@ async def sync_edge_recordings(limit: int | None = None) -> dict[str, int]:
             )
             created += 1
 
-    return {"total": len(recordings), "created": created, "updated": updated}
+    return {"total": len(recordings), "created": created, "updated": updated, "downloaded": downloaded, "skipped": skipped}
+
+
+async def edge_recordings_sync_loop() -> None:
+    interval = max(settings.edge_recordings_sync_interval_seconds, 10)
+    limit = settings.edge_recordings_sync_limit or 5
+    while True:
+        try:
+            result = await sync_edge_recordings(limit=limit)
+            logger.info("Edge recordings sync completed: {}", result)
+        except Exception as exc:
+            logger.warning("Edge recordings sync failed: {}", exc)
+        await asyncio.sleep(interval)
 
 
 def _open_edge_video(path: str, range_header: str | None = None):

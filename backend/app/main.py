@@ -23,21 +23,29 @@ async def lifespan(app: FastAPI):
     settings.upload_root.parent.mkdir(parents=True, exist_ok=True)
 
     mqtt_task: asyncio.Task | None = None
+    recordings_task: asyncio.Task | None = None
     if settings.enable_mqtt:
         from app.mqtt_client.consumer import mqtt_consumer
 
         mqtt_task = asyncio.create_task(mqtt_consumer())
         logger.info("MQTT consumer started inside FastAPI process")
+    if settings.edge_recordings_base_url:
+        from app.services.edge_recordings import edge_recordings_sync_loop
+
+        recordings_task = asyncio.create_task(edge_recordings_sync_loop())
+        logger.info("Edge recordings sync loop started")
 
     try:
         yield
     finally:
-        if mqtt_task:
-            mqtt_task.cancel()
+        for task in (mqtt_task, recordings_task):
+            if not task:
+                continue
+            task.cancel()
             try:
-                await mqtt_task
+                await task
             except asyncio.CancelledError:
-                logger.info("MQTT consumer stopped")
+                logger.info("Background task stopped")
         await close_database()
 
 

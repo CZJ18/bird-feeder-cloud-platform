@@ -56,6 +56,8 @@ class Settings:
     device_online_seconds: int = _int_env("DEVICE_ONLINE_SECONDS", 300)
     edge_recordings_base_url: str = os.getenv("EDGE_RECORDINGS_BASE_URL", "")
     edge_recordings_api_token: str = os.getenv("EDGE_RECORDINGS_API_TOKEN", "")
+    edge_recordings_sync_interval_seconds: int = _int_env("EDGE_RECORDINGS_SYNC_INTERVAL_SECONDS", 60)
+    edge_recordings_sync_limit: int = _int_env("EDGE_RECORDINGS_SYNC_LIMIT", 5)
 
     api_host: str = os.getenv("API_HOST", "0.0.0.0")
     api_port: int = _int_env("API_PORT", 8000)

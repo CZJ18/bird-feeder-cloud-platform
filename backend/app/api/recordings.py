@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
+from app.config import settings
 from app.schemas.common import api_success
 from app.services.edge_recordings import stream_edge_recording, sync_edge_recordings
 
@@ -11,7 +12,7 @@ public_router = APIRouter(prefix="/api")
 
 @router.post("/recordings/sync")
 async def sync_recordings(limit: int | None = None) -> dict[str, object]:
-    return api_success(await sync_edge_recordings(limit))
+    return api_success(await sync_edge_recordings(limit or settings.edge_recordings_sync_limit))
 
 
 @public_router.get("/recordings/{recording_path:path}")
